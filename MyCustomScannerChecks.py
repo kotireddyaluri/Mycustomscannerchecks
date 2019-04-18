@@ -12,6 +12,9 @@ GREP_STRING_BYTES1 = bytearray(GREP_STRING1)
 JWT_Keys = "eyJ"
 JWT_Keys_Bytes = bytearray(JWT_Keys)
 
+JavaDeser_Keys="rO0AB"
+JavaDeser_Keys_Bytes = bytearray(JavaDeser_Keys)
+
 callbacks = None
 helpers = None
 
@@ -35,7 +38,7 @@ class BurpExtender(IBurpExtender, IScannerCheck):
         callbacks.registerScannerCheck(postMessageSender())
         callbacks.registerScannerCheck(postMessageReceiver())
         callbacks.registerScannerCheck(Jwt_Token_res())
-        #callbacks.registerScannerCheck(Jwt_Token_req())
+        callbacks.registerScannerCheck(Java_Deserlize_res())
 
         return
 
@@ -134,6 +137,53 @@ class Jwt_Token_res(IScannerCheck):
             [callbacks.applyMarkers(baseRequestResponse, None, matches)],
             "JWT Token Detected - Response",
             "The response contains the string: " + JWT_Keys,
+            "Information")]
+
+    def doActiveScan(self, baseRequestResponse, insertionPoint):
+        # report the issue
+        return None
+
+    def _get_matches(self, response, match):
+        matches = []
+        start = 0
+        reslen = len(response)
+        matchlen = len(match)
+        while start < reslen:
+            start = helpers.indexOf(response, match, True, start, reslen)
+            if start == -1:
+                break
+            matches.append(array('i', [start, start + matchlen]))
+            start += matchlen
+
+        return matches
+
+    def consolidateDuplicateIssues(self, existingIssue, newIssue):
+        if existingIssue.getIssueName() == newIssue.getIssueName():
+            return -1
+
+        return 0
+
+
+    def consolidateDuplicateIssues(self, existingIssue, newIssue):
+        if existingIssue.getIssueName() == newIssue.getIssueName():
+            return -1
+
+        return 0
+
+class Java_Deserlize_res(IScannerCheck):
+    def doPassiveScan(self, baseRequestResponse):
+        # look for matches of our passive check grep string
+        matches = self._get_matches(baseRequestResponse.getResponse(), JavaDeser_Keys_Bytes)
+        if (len(matches) == 0):
+            return None
+
+        # report the issue
+        return [CustomScanIssue(
+            baseRequestResponse.getHttpService(),
+            helpers.analyzeRequest(baseRequestResponse).getUrl(),
+            [callbacks.applyMarkers(baseRequestResponse, None, matches)],
+            "Java Deserialization Object detected - Response",
+            "The response contains the string: " + JavaDeser_Keys,
             "Information")]
 
     def doActiveScan(self, baseRequestResponse, insertionPoint):
