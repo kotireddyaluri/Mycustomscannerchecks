@@ -12,7 +12,7 @@ GREP_STRING_BYTES1 = bytearray(GREP_STRING1)
 JWT_Keys = "eyJ"
 JWT_Keys_Bytes = bytearray(JWT_Keys)
 
-JavaDeser_Keys="rO0AB"
+JavaDeser_Keys="rO0A"
 JavaDeser_Keys_Bytes = bytearray(JavaDeser_Keys)
 
 callbacks = None
