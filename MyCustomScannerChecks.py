@@ -9,11 +9,17 @@ GREP_STRING_BYTES = bytearray(GREP_STRING)
 GREP_STRING1 = ".addEventListener"
 GREP_STRING_BYTES1 = bytearray(GREP_STRING1)
 
+#
+# Missing check in response headers***
+#
 JWT_Keys = "eyJ"
 JWT_Keys_Bytes = bytearray(JWT_Keys)
 
-JavaDeser_Keys="rO0A"
-JavaDeser_Keys_Bytes = bytearray(JavaDeser_Keys)
+NET_SERIAL_B64 = "AAEAAAD"
+NET_SERIAL_B64_Bytes = bytearray(NET_SERIAL_B64)
+
+JAVA_SERIAL_B64 = "rO0A"
+JAVA_SERIAL_B64_Bytes = bytearray(NET_SERIAL_B64)
 
 callbacks = None
 helpers = None
@@ -38,7 +44,9 @@ class BurpExtender(IBurpExtender, IScannerCheck):
         callbacks.registerScannerCheck(postMessageSender())
         callbacks.registerScannerCheck(postMessageReceiver())
         callbacks.registerScannerCheck(Jwt_Token_res())
-        callbacks.registerScannerCheck(Java_Deserlize_res())
+        callbacks.registerScannerCheck(Net_Serial_res())
+        callbacks.registerScannerCheck(Java_Serial_res())
+        #callbacks.registerScannerCheck(Jwt_Token_req())
 
         return
 
@@ -170,10 +178,10 @@ class Jwt_Token_res(IScannerCheck):
 
         return 0
 
-class Java_Deserlize_res(IScannerCheck):
+class Net_Serial_res(IScannerCheck):
     def doPassiveScan(self, baseRequestResponse):
         # look for matches of our passive check grep string
-        matches = self._get_matches(baseRequestResponse.getResponse(), JavaDeser_Keys_Bytes)
+        matches = self._get_matches(baseRequestResponse.getResponse(), NET_SERIAL_B64_Bytes)
         if (len(matches) == 0):
             return None
 
@@ -182,8 +190,8 @@ class Java_Deserlize_res(IScannerCheck):
             baseRequestResponse.getHttpService(),
             helpers.analyzeRequest(baseRequestResponse).getUrl(),
             [callbacks.applyMarkers(baseRequestResponse, None, matches)],
-            "Java Deserialization Object detected - Response",
-            "The response contains the string: " + JavaDeser_Keys,
+            ".NET Serialization object Detected - Response",
+            "The response contains the string: " + NET_SERIAL_B64,
             "Information")]
 
     def doActiveScan(self, baseRequestResponse, insertionPoint):
@@ -217,6 +225,52 @@ class Java_Deserlize_res(IScannerCheck):
 
         return 0
 
+class Java_Serial_res(IScannerCheck):
+    def doPassiveScan(self, baseRequestResponse):
+        # look for matches of our passive check grep string
+        matches = self._get_matches(baseRequestResponse.getResponse(), JAVA_SERIAL_B64_Bytes)
+        if (len(matches) == 0):
+            return None
+
+        # report the issue
+        return [CustomScanIssue(
+            baseRequestResponse.getHttpService(),
+            helpers.analyzeRequest(baseRequestResponse).getUrl(),
+            [callbacks.applyMarkers(baseRequestResponse, None, matches)],
+            ".NET Serialization object Detected - Response",
+            "The response contains the string: " + JAVA_SERIAL_B64,
+            "Information")]
+
+    def doActiveScan(self, baseRequestResponse, insertionPoint):
+        # report the issue
+        return None
+
+    def _get_matches(self, response, match):
+        matches = []
+        start = 0
+        reslen = len(response)
+        matchlen = len(match)
+        while start < reslen:
+            start = helpers.indexOf(response, match, True, start, reslen)
+            if start == -1:
+                break
+            matches.append(array('i', [start, start + matchlen]))
+            start += matchlen
+
+        return matches
+
+    def consolidateDuplicateIssues(self, existingIssue, newIssue):
+        if existingIssue.getIssueName() == newIssue.getIssueName():
+            return -1
+
+        return 0
+
+
+    def consolidateDuplicateIssues(self, existingIssue, newIssue):
+        if existingIssue.getIssueName() == newIssue.getIssueName():
+            return -1
+
+        return 0
 
 #
 # class implementing IScanIssue to hold our custom scan issue details
