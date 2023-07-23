@@ -19,7 +19,7 @@ NET_SERIAL_B64 = "AAEAAAD"
 NET_SERIAL_B64_Bytes = bytearray(NET_SERIAL_B64)
 
 JAVA_SERIAL_B64 = "rO0A"
-JAVA_SERIAL_B64_Bytes = bytearray(NET_SERIAL_B64)
+JAVA_SERIAL_B64_Bytes = bytearray(JAVA_SERIAL_B64)
 
 callbacks = None
 helpers = None
